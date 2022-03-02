@@ -7,13 +7,15 @@ def file_reader(path):  # чтение файла
         return html_file.read()
 
 
-def sub_table(file_html):  # поиск таблицы по шаблону
+def sub_table(path):  # поиск таблицы по шаблону
+    file_html = file_reader(path)
     match = re.findall("<table class=\"testSummaryTable\">.*<table class=\"mainTable\" id = \"GetTable\">", file_html,
                        flags=re.S)
     return match[0]
 
 
-def sub_table_changer(table):  # Новая таблица по шаблону без лишних столбцов
+def sub_table_changer(path):  # Новая таблица по шаблону без лишних столбцов
+    table = sub_table(path)
     new_table = ''
     strings = table.split('\n')
     for i in range(len(strings)):
@@ -26,7 +28,8 @@ def sub_table_changer(table):  # Новая таблица по шаблону �
     return new_table
 
 
-def td_strings(new_table):  # Извлечение самих строк для последущего извеления данных для формирования отчетов
+def td_strings(path):  # Извлечение самих строк для последущего извеления данных для формирования отчетов
+    new_table = sub_table(path)
     match = re.findall("<td class=.*</td>", new_table)
     new_match = []
     for i in range(len(match)):
@@ -34,7 +37,8 @@ def td_strings(new_table):  # Извлечение самих строк для 
     return new_match
 
 
-def table_data(data_strings):  # Числа из таблицы
+def table_data(path):  # Числа из таблицы
+    data_strings = td_strings(path)
     data_of_table = []
     for i in data_strings:
         i = re.search("\">.*<", i)[0]
@@ -49,13 +53,13 @@ def name_of_model(path):  # Имя модели для генерации CSV
     return model_name
 
 
-def exel_table_field_format(name, data):  # Перевод в формат строки CSV файла
+def exel_table_field_format(path):  # Перевод в формат строки CSV файла
+    name = name_of_model(path)
+    data = table_data(path)
     return name + "," + ",".join(data[7:])
 
 
-exel_table_field_format(name_of_model(r"C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/tester.html"),
-                        table_data(td_strings(sub_table_changer(
-                            sub_table(file_reader(r"C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/tester.html"))))))
+print(exel_table_field_format("C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/KT301P.00ZK.000TW01-1004.AS.TD04_KG.html"))
 
 
 

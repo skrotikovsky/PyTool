@@ -1,13 +1,15 @@
+# файл исключительно для редактирования всех html файлов
 import os
 import Exel_Otchet
-html_files = []
-otchet_data = [0, 0, 0, 0]
 
 
-for root, dirs, files in os.walk("C:/Users/skrut/OneDrive/Рабочий стол/текстовики1"):  # поиск всех html файлов в указанной директории
-    for file in files:
-        if file.endswith(".html"):
-            html_files.append(os.path.join(root, file))
+def get_html_dirs(path):
+    html_files = []
+    for root, dirs, files in os.walk(path):  # поиск всех html файлов в указанной директории получаем массив директорий
+        for file in files:
+            if file.endswith(".html"):
+                html_files.append(os.path.join(root, file))
+    return html_files
 
 
 def file_reader(path):  # чтение файла
@@ -23,27 +25,16 @@ def refactor_of_html(path):  # заменяем старую таблицу на
     return html_file.replace(sub_table, correct_sub_table)
 
 
+# ------------------------------------------------------------------------------------------
 def write_html_file(path):  # изменяем таблицы во всех html файлах которые нашел цикл
-    with open(path, 'r', encoding="utf-8") as file_html:
-        file_html = refactor_of_html(path)
-        with open(path, 'w', encoding="utf-8") as file_html_to_write:
-            file_html_to_write.write(file_html)
+    file_html = refactor_of_html(path)
+    with open(path, 'w', encoding="utf-8") as file_html_to_write:
+        file_html_to_write.write(file_html)
+# ------------------------------------------------------------------------------------------
 
 
-def html_redactor():  # забиндить кнопке в приложении запуск этой функции
-    for i in html_files:
-        data_for_otchet = Exel_Otchet.table_data(Exel_Otchet.td_strings(Exel_Otchet.sub_table_changer(
-                            Exel_Otchet.sub_table(file_reader(i)))))
-        global otchet_data
-        otchet_data[0] += int(data_for_otchet[8])
-        otchet_data[1] += int(data_for_otchet[9])
-        otchet_data[2] += int(data_for_otchet[10])
-        otchet_data[3] += int(data_for_otchet[11])
+def html_redactor(path):  # пробегает по ВСЕМ html в директории
+    for i in get_html_dirs(path):
         write_html_file(i)
 
-
-print(otchet_data)
-html_redactor()
-print(otchet_data)
-
-
+# "C:/Users/skrut/OneDrive/Рабочий стол/текстовики1" test dir
