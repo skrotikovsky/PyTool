@@ -53,18 +53,14 @@ def name_of_model(path):  # Имя модели для генерации CSV
     return model_name
 
 
-def exel_table_field_format(path):  # Перевод в формат строки CSV файла
+def get_exel_format(path, is_edited_table):  # Перевод в формат строки CSV файла
     name = name_of_model(path)
     data = table_data(path)
-    return name + "," + ",".join(data[7:])
+    if not is_edited_table:
+        data = data[0:4] + data[5:6] + data[7:13] + data[14:15] + data[16:]
+        # небольшой костыль тк шаблон всегда один то попросту склеиваем части массива без ненужных элементов
+    return name
 
 
-print(exel_table_field_format("C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/KT301P.00ZK.000TW01-1004.AS.TD04_KG.html"))
-
-
-
-# sub_table_changer(sub_table(r"C:/Users/skrut/OneDrive/Рабочий стол/текстовики/TESTER.txt"))
-# алгоритм: достаем все строки начинающиеся с <td> и извлекаем из них данные
-# что бы заменить надо будет исзвлечь через subtable изначальную таблицу, удалить из нее строки ненужные и с помощью sub поставить обратно
-# sub_table(file_reader(r"C:/Users/skrut/OneDrive/Рабочий стол/текстовики/TESTER.txt"))
-#  file_reader(r"C:/Users/skrut/OneDrive/Рабочий стол/текстовики")
+print(get_exel_format("C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/"
+                      "KT301P.00ZK.000TW01-1004.AS.TD04_KG.html", True))
