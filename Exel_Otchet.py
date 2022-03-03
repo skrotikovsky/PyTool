@@ -59,7 +59,7 @@ def get_exel_format(path, is_edited_table):  # Перевод в формат с
     if not is_edited_table:
         data = data[0:4] + data[5:6] + data[7:13] + data[14:15] + data[16:]
         # небольшой костыль тк шаблон всегда один то попросту склеиваем части массива без ненужных элементов
-    return name
+    return [name] + data
 
 
 print(get_exel_format("C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/"
