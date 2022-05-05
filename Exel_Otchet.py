@@ -62,5 +62,3 @@ def get_exel_format(path, is_edited_table):  # Перевод в формат с
     return [name] + data
 
 
-print(get_exel_format("C:/Users/skrut/OneDrive/Рабочий стол/текстовики1/"
-                      "KT301P.00ZK.000TW01-1004.AS.TD04_KG.html", True))

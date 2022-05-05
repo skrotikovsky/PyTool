@@ -16,8 +16,8 @@ def path_user_input(self):  # Show directory chosen by user
     path = QTextEdit()
     path.resize(40, 40)
     path.setMinimumSize(QtCore.QSize(40, 40))
-    self.path = path
-    self.vbox.addWidget(self.path)
+    self.path_exel = path
+    self.vbox.addWidget(self.path_exel)
 
 
 class NewWindow(QMainWindow):  # Create window
