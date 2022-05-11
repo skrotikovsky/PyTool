@@ -6,8 +6,10 @@ from openpyxl.styles import (
     PatternFill, Border, Side,
     Alignment, Font, GradientFill
 )
+from openpyxl.styles import Border, Side
 
-path_exel = r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/Просмотр/Коллизии/2022.4.24/1.xlsx"
+array_of_colors = ['CCD1BF', 'D4D2AA', 'DFE2E4', 'C9D5D1', 'D5CAAF', 'CFB677', 'BED2B8', 'ACC1CB', 'CECEA9', 'A1BCCB', 'D6DCC6']
+path_exel = r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/Просмотр/Коллизии/2022.4.24/3.xlsx"
 # path_exel = r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/Просмотр/Коллизии/2022.4.24"
 path_of_main = r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples"
 
@@ -33,11 +35,11 @@ def find_xlsx(path):
 
 
 def get_exel_array(path):  # представляет отчет в виде двумерного массива
-    return pyexcel.get_array(file_name=path_exel)
+    return pyexcel.get_array(file_name=path)
 
 
-def get_otchet_rows_array(path):  # из названия файлов достает марку и делает приписку а так же достает новые коллизии
-    # и неразрешенные коллизии
+def get_otchet_rows_dict(path):  # из названия файлов достает марку и делает приписку а так же достает новые коллизии
+    # и неразрешенные коллизии а так же схлопывает строки если марки одинаковые
     added_marks = []
     rows_array = []
     data = get_exel_array(path)
@@ -57,7 +59,14 @@ def get_otchet_rows_array(path):  # из названия файлов дост�
         for j in range(3):
             if rows_array[i][j] == '' or rows_array[i][j] == 'Коллизий не обнаружено':
                 rows_array[i][j] = 0
-    return rows_array
+    marks_and_rows_dict = {}
+    for value in rows_array:
+        if value[0] not in marks_and_rows_dict.keys():
+            marks_and_rows_dict.update({value[0]: [value[1], value[2]]})
+        else:
+            mark_value = marks_and_rows_dict[value[0]]
+            marks_and_rows_dict[value[0]] = [int(mark_value[0]) + int(value[1]), int(mark_value[1]) + int(value[2])]
+    return marks_and_rows_dict
 
 
 def get_otchet_marks_array(path):  # достает только марки и делает приписку
@@ -86,17 +95,6 @@ def get_main_otchet_marks(main_path):  # возвращает марки из г
     return set(list(map(lambda x: x[0], get_main_otchet_array(main_path)))[2:])
 
 
-def add_new_marks(path, main_path):  # возвращает старые марки + новые
-    marks = set(get_otchet_marks_array(path))
-    main_marks = get_main_otchet_marks(main_path)
-    difference = marks - main_marks
-    new_marks = list(main_marks.union(difference))
-    if difference:
-        return new_marks
-    else:
-        return list(main_marks)
-
-
 def get_new_marks(path, main_path):  # возвращает новые марки
     marks = set(get_otchet_marks_array(path))
     main_marks = get_main_otchet_marks(main_path)
@@ -104,36 +102,13 @@ def get_new_marks(path, main_path):  # возвращает новые марк�
     return list(difference)
 
 
-def get_setted_dict_of_marks(path, main_path):  # оставляет только уникальные марки и создает словарь "марка":
-    # массив(пустой пока что)
-    list_of_dicts = list(map(lambda x: {x: []}, add_new_marks(path, main_path)))
-    new_dict = {}
-    for i in list_of_dicts:
-        new_dict.update(i)
-    #   print(new_dict)
-    return new_dict
-
-
 def get_rows_for_empty_list(path, worksheet):  # добавляет марки из отчета в главный отчет
     marks = get_otchet_marks_array(path)
     sorted_marks = sorted(marks)
-    worksheet.cell(row=0 + 1, column=0 + 1).value = ''
+    worksheet.cell(row=0 + 1, column=0 + 1).value = 'Дата'
     worksheet.cell(row=0 + 2, column=0 + 1).value = 'Конфликты'
     for index, value in enumerate(sorted_marks):
         worksheet.cell(row=index + 3, column=0 + 1).value = value
-
-
-def get_marks_and_row_dict(path, main_path):  # заполняет массивы предыдущего словаря и если в строках есть
-    # одинаковые марки - схлопывает их
-    rows_array = get_otchet_rows_array(path)
-    marks_dict = get_setted_dict_of_marks(path, main_path)
-    for i in rows_array:
-        mark = marks_dict[i[0]]
-        if not mark:
-            marks_dict[i[0]] = [int(i[1]), int(i[2])]
-        else:
-            marks_dict[i[0]] = [int(mark[0]) + int(i[1]), int(mark[1]) + int(i[2])]
-    return marks_dict
 
 
 def get_main_marks_and_rows(main_path):  # превращает главный exel отчет в пары ключ(марка): значение(строка после)
@@ -145,27 +120,37 @@ def get_main_marks_and_rows(main_path):  # превращает главный e
 
 def moved_right_rows(path, main_path):  # добвляет в начале строки 2 пустых элемента в которые будут вписаны данные
     # новой проверки
+    # wb = openpyxl.load_workbook(r"c:/users/skrut/onedrive/рабочий стол/exelexamples/kt101r_главный отчет.xlsx")
+    # worksheet = wb['openpyxl']
+    # wb.save(r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx")
+    # print(worksheet.cell(row=1, column=2).value)
     moved_rows = get_main_marks_and_rows(main_path)
+    # len_of_line = len(moved_rows[''])
+
     for i in moved_rows.keys():
         moved_rows[i] = [0, 0] + moved_rows[i]
     new_marks = get_new_marks(path, main_path)
+    print(new_marks)
     if new_marks:
         for i in new_marks:
             moved_rows.update({i: [0, 0]})
     return moved_rows
 
 
-def write_row(row, row_num, worksheet):  # функция написания строки в лист(worksheet) в строку номер (row num) а сама
+def write_row(row, row_num, column_start, worksheet):  # функция написания строки в лист(worksheet) в строку номер (row
+    # num) а сама
     # строка = row
     for i, value in enumerate(row):
-        worksheet.cell(row=row_num, column=i + 2).value = row[i]
+        worksheet.cell(row=row_num, column=i + column_start).value = row[i]
 
 
-def write_header(worksheet):  # вписывает дату \ общее кол-во\ новых в таблицу для текущей проверки
-    worksheet.cell(row=0 + 1, column=1 + 1).value = f'{datetime.datetime.now()}'
-    worksheet.cell(row=0 + 1, column=2 + 1).value = ''
-    worksheet.cell(row=1 + 1, column=1 + 1).value = 'Новые'
-    worksheet.cell(row=1 + 1, column=2 + 1).value = 'Общее кол-во'
+def paint_row(row, row_num, color, worksheet):
+    for i in range(len(row) + 1):
+        worksheet.cell(row=row_num, column=i + 1).fill = PatternFill('solid',
+                                                                     fgColor=color)
+        thin = Side(border_style="thin", color="2E3234")
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+        worksheet.cell(row=row_num, column=i + 1).border = border
 
 
 def write_if_main_is_empty(path, main_path):  # если главный отчет пустой - заполняет его марками в первом столбце(теми
@@ -181,17 +166,22 @@ def write_if_main_is_empty(path, main_path):  # если главный отче
 
 def write_if_data_exists(path, main_path):  # если главный отчет уже заполнен - добавляет данные по новой проверке
     # в начало списка проверок
+    main_array = get_main_otchet_array(main_path)
     wb = openpyxl.load_workbook(r"c:/users/skrut/onedrive/рабочий стол/exelexamples/kt101r_главный отчет.xlsx")
     worksheet = wb['openpyxl']
-    current_otchet_rows = {}
-    for i in get_otchet_rows_array(path):
-        current_otchet_rows.update({i[0]: [i[1], i[2]]})
+    current_otchet_rows = get_otchet_rows_dict(path)
+    line_1 = main_array[0]
+    line_2 = main_array[1]
+    line_1.insert(1, '')
+    line_1.insert(1, f'{datetime.date.today()}')
+    line_2.insert(1, 'Конфликты')
+    line_2.insert(1, 'Дата')
     moved_main_otchet_rows = moved_right_rows(path, main_path)
     sorted_otchet_marks = sorted(moved_main_otchet_rows.keys())
-    print(current_otchet_rows)
-    print(moved_main_otchet_rows)
+    keys_and_colors = {}
+    counter = 0
     for index, value in enumerate(sorted_otchet_marks):
-        if value == '' or value == 'Конфликты':
+        if value == 'Дата' or value == 'Конфликты' or value == '':
             continue
         if value in current_otchet_rows.keys():
             moved_main_otchet_rows[value][0] = current_otchet_rows[value][0]
@@ -199,17 +189,22 @@ def write_if_data_exists(path, main_path):  # если главный отчет
         else:
             moved_main_otchet_rows[value][0] = ''
             moved_main_otchet_rows[value][1] = ''
-        worksheet.cell(row=index + 3, column=0 + 1).value = value
+        if counter == len(array_of_colors):
+            counter = 0
+        worksheet.cell(row=index+1, column=0 + 1).value = value
+        keys_and_colors.update({value: array_of_colors[counter]})
+        counter += 1
         # worksheet.cell(row=index + 3, column=0 + 1).fill = PatternFill('solid', fgColor="DDDDDD")
-    print(moved_main_otchet_rows.keys())
+
     for value in range(len(moved_main_otchet_rows.keys())):
-        row_key = worksheet.cell(row=value + 3, column=0 + 1).value
-        if row_key != '' and row_key != 'Конфликты' and row_key is not None:
-            print(moved_main_otchet_rows[row_key])
-            write_row(moved_main_otchet_rows[row_key], value + 3, worksheet)
-    write_row(moved_main_otchet_rows[''], 0 + 1, worksheet)
-    write_row(moved_main_otchet_rows['Конфликты'], 1 + 1, worksheet)
-    write_header(worksheet)
+        row_key = worksheet.cell(row=value + 1, column=0 + 1).value
+        if row_key != 'Дата' and row_key != 'Конфликты' and row_key is not None:
+            write_row(moved_main_otchet_rows[row_key], value + 1, 2, worksheet)
+            paint_row(moved_main_otchet_rows[row_key], value + 1, keys_and_colors[row_key], worksheet)
+    write_row(line_1, 0 + 1, 1, worksheet)
+    write_row(line_2, 1 + 1, 1, worksheet)
+    paint_row(line_1, 0 + 1, '92FF88', worksheet)
+    paint_row(line_1, 1 + 1, '92FF88', worksheet)
     wb.save(r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx")
 
 
