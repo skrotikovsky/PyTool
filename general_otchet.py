@@ -34,8 +34,7 @@ def find_xlsx(path):
 
 
 def get_exel_array(path):  # представляет отчет в виде двумерного массива
-
-    return pyexcel.get_array(file_name=path)
+    return pyexcel.get_array(file_name=path[0])
 
 
 def get_otchet_rows_dict(path):  # из названия файлов достает марку и делает приписку а так же достает новые коллизии
@@ -88,7 +87,7 @@ def get_otchet_marks_array(path):  # достает только марки и �
 
 
 def get_main_otchet_array(main_path):  # читает главный отчет и представляет его в виде двумерного массива
-    return pyexcel.get_array(file_name=get_xlsx_in_dir(main_path)[0])
+    return pyexcel.get_array(file_name=main_path[0])
 
 
 def get_main_otchet_marks(main_path):  # возвращает марки из главного отчета
@@ -131,7 +130,6 @@ def moved_right_rows(path, main_path):  # добвляет в начале ст�
     for i in moved_rows.keys():
         moved_rows[i] = [0, 0] + moved_rows[i]
     new_marks = get_new_marks(path, main_path)
-    print(new_marks)
     if new_marks:
         for i in new_marks:
             moved_rows.update({i: [0, 0]})
@@ -159,8 +157,6 @@ def paint_row(row, row_num, color, worksheet, column_start):
 
 def write_if_main_is_empty(path, main_path):  # если главный отчет пустой - заполняет его марками в первом столбце(теми
     # которые были в начальных данных в алфавитном порядке марок) и вызывает функцию заполнения
-    # marks_and_rows = get_marks_and_row_dict(path, main_path)
-    # sorted_marks = sorted(marks_and_rows.keys())
     wb = openpyxl.load_workbook(r"c:/users/skrut/onedrive/рабочий стол/exelexamples/kt101r_главный отчет.xlsx")
     worksheet = wb['openpyxl']
     get_rows_for_empty_list(path, worksheet)
@@ -228,5 +224,3 @@ def write_data_in_main_otchet(main_path):  # заполняет данными �
             return write_if_data_exists
     return write_if_main_is_empty
 
-
-write_data_in_main_otchet(path_of_main)(path_exel, path_of_main)
