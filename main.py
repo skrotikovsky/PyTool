@@ -1,9 +1,11 @@
+import pandas
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMessageBox
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 import sys
 import datetime
 import os
+from pandas import read_excel
 import openpyxl
 from openpyxl.styles import (
     PatternFill, Border, Side
@@ -12,11 +14,90 @@ from openpyxl.styles import (
 array_of_colors = ['CCD1BF', 'D4D2AA', 'DFE2E4', 'C9D5D1', 'D5CAAF', 'CFB677', 'BED2B8', 'ACC1CB', 'CECEA9', 'A1BCCB',
                    'D6DCC6']
 # main_otchet_file = r'C:\Users\skrut\OneDrive\Рабочий стол\exelExamples\KT101R_Главный отчет.xlsx'
-# exel_otchet_file = r'C:\Users\skrut\OneDrive\Рабочий стол\exelExamples\Просмотр\Коллизии\2022.4.24\1.xlsx'
+# exel_otchet_file = r'C:\Users\skrut\OneDrive\Рабочий стол\exelExamples\Просмотр\Коллизии\2022.4.27\3.xlsx'
 main_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx'
 exel_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/Просмотр/Коллизии/2022.4.24/1.xlsx'
-print(main_otchet_file)
-print(exel_otchet_file)
+# main_otchet_file = ''
+# exel_otchet_file = ''
+
+
+def get_main_otchet_array():  # читает главный отчет и представляет его в виде двумерного массива
+    # wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
+    # worksheet = wb['Лист1']
+    # # print(worksheet)
+    # # print(worksheet.max_row)
+    # # print(worksheet.max_column)
+    # if worksheet.cell(row=1, column=1).value is None:
+    #     return []
+    # exel_array = []
+    # for i in range(worksheet.max_row):
+    #     exel_array.append([])
+    #     for j in range(worksheet.max_column):
+    #         value = worksheet.cell(row=i + 1, column=j + 1).value
+    #         if value is None:
+    #             value = ''
+    #         exel_array[i].append(value)
+    # return exel_array
+    # print(pyexcel.get_array(file_name=main_otchet_file))
+    # return get_array(file_name=main_otchet_file)
+
+    df = read_excel(main_otchet_file, sheet_name='Лист1')
+    df.fillna(0)
+    df = list(df.values)
+    wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
+    worksheet = wb['Лист1']
+    first_line = []
+    if worksheet.cell(row=1, column=1).value is not None:
+        for i in range(len(df[0])):
+            first_line.append(worksheet.cell(row=0 + 1, column=i + 1).value)
+    for index, value in enumerate(df):
+        df[index] = list(value)
+    df.insert(0, first_line)
+    for i in range(len(df)):
+        for j in range(len(df[i])):
+            if pandas.isna(df[i][j]):
+                df[i][j] = ''
+    # print(df[index])
+    # print(df)
+    # print('##############################################################')
+    return df
+
+
+def get_exel_array():  # представляет отчет в виде двумерного массива
+    # wb = openpyxl.load_workbook(exel_otchet_file, data_only=True)
+    # worksheet = wb['Лист1']
+    # exel_array = []
+    # for i in range(worksheet.max_row):
+    #     exel_array.append([])
+    #     for j in range(worksheet.max_column):
+    #         value = worksheet.cell(row=i + 1, column=j + 1).value
+    #         if value is None:
+    #             value = ''
+    #         exel_array[i].append(value)
+    # for i in range(len(df)):
+    #     for j in range(len(df[i])):
+    #         if df[i][j] == 'nan':
+    #             df[i][j] = ''
+    # print(pyexcel.get_array(file_name=exel_otchet_file))
+    wb = openpyxl.load_workbook(exel_otchet_file, data_only=True)
+    worksheet = wb['Лист1']
+    first_line = []
+    for i in range(worksheet.max_column):
+        first_line.append(worksheet.cell(row=0 + 1, column=i + 1).value)
+    df = read_excel(exel_otchet_file, sheet_name='Лист1')
+    df = list(df.values)
+    for index, value in enumerate(df):
+        df[index] = list(value)
+    df.insert(0, first_line)
+    for i in range(len(df)):
+        for j in range(len(df[i])):
+            if pandas.isna(df[i][j]):
+                df[i][j] = 0
+    # print(df)
+    # #     print(df[index])
+    # print(df)
+    # print('#################################################')
+    return df
 
 
 def get_xlsx_in_dir(path):
@@ -37,21 +118,6 @@ def find_xlsx(path):
     return list(set(html_dirs))
 
 
-def get_exel_array():  # представляет отчет в виде двумерного массива
-    wb = openpyxl.load_workbook(exel_otchet_file, data_only=True)
-    worksheet = wb['Лист1']
-    exel_array = []
-    for i in range(worksheet.max_row):
-        exel_array.append([])
-        for j in range(worksheet.max_column):
-            value = worksheet.cell(row=i + 1, column=j + 1).value
-            if value is None:
-                value = ''
-            exel_array[i].append(value)
-    # return get_array(file_name=exel_otchet_file)
-    return exel_array
-
-
 def get_otchet_rows_dict():  # из названия файлов достает марку и делает приписку а так же достает новые коллизии
     # и неразрешенные коллизии а так же схлопывает строки если марки одинаковые
     added_marks = []
@@ -69,6 +135,7 @@ def get_otchet_rows_dict():  # из названия файлов достает
         else:
             rows_array.append([f'Кол-во конфликтов между {i[0]}', i[1], i[4]])
             added_marks.append(i[0])
+    print(rows_array)
     for i in range(len(rows_array)):
         for j in range(3):
             if rows_array[i][j] == '' or rows_array[i][j] == 'Коллизий не обнаружено':
@@ -80,6 +147,10 @@ def get_otchet_rows_dict():  # из названия файлов достает
         else:
             mark_value = marks_and_rows_dict[value[0]]
             marks_and_rows_dict[value[0]] = [int(mark_value[0]) + int(value[1]), int(mark_value[1]) + int(value[2])]
+            # print(mark_value[0])
+            # print(mark_value[1])
+            # print(value)
+            # print('#########################################################')
     return marks_and_rows_dict
 
 
@@ -101,26 +172,8 @@ def get_otchet_marks_array():  # достает только марки и де�
     return list(set(marks_array))
 
 
-def get_main_otchet_array():  # читает главный отчет и представляет его в виде двумерного массива
-    wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
-    worksheet = wb['Лист1']
-    exel_array = []
-    for i in range(worksheet.max_row):
-        exel_array.append([])
-        for j in range(worksheet.max_column):
-            value = worksheet.cell(row=i + 1, column=j + 1).value
-            if value is None:
-                value = ''
-            exel_array[i].append(value)
-    print(worksheet.max_row)
-    print(worksheet.max_column)
-    # return get_array(file_name=exel_otchet_file)
-    return exel_array
-#    return get_array(file_name=main_otchet_file)
-
-
 def get_main_otchet_marks():  # возвращает марки из главного отчета
-    return set(list(map(lambda x: x[0], get_main_otchet_array()))[2:])
+    return set(list(map(lambda x: x[0], get_main_otchet_array()))[3:])
 
 
 def get_new_marks():  # возвращает новые марки
@@ -128,16 +181,6 @@ def get_new_marks():  # возвращает новые марки
     main_marks = get_main_otchet_marks()
     difference = marks - main_marks
     return list(difference)
-
-
-def get_rows_for_empty_list(worksheet):  # добавляет марки из отчета в главный отчет
-    marks = get_otchet_marks_array()
-    sorted_marks = sorted(marks)
-    worksheet.cell(row=0 + 1, column=0 + 1).value = 'Дата'
-    worksheet.cell(row=0 + 2, column=0 + 1).value = 'Конфликты'
-    worksheet.cell(row=0 + 3, column=0 + 1).value = 'Итого:'
-    for index, value in enumerate(sorted_marks):
-        worksheet.cell(row=index + 4, column=0 + 1).value = value
 
 
 def get_main_marks_and_rows():  # превращает главный exel отчет в пары ключ(марка): значение(строка после)
@@ -153,13 +196,13 @@ def moved_right_rows():  # добвляет в начале строки 2 пу�
     # worksheet = wb['openpyxl']
     # wb.save(r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx")
     moved_rows = get_main_marks_and_rows()
-
     for i in moved_rows.keys():
         moved_rows[i] = [0, 0] + moved_rows[i]
     new_marks = get_new_marks()
     if new_marks:
         for i in new_marks:
             moved_rows.update({i: [0, 0]})
+
     return moved_rows
 
 
@@ -182,10 +225,22 @@ def paint_row(row, row_num, color, worksheet, column_start):
     worksheet.cell(row=row_num, column=1).border = border
 
 
+def get_rows_for_empty_list(worksheet):  # добавляет марки из отчета в главный отчет
+    marks = get_otchet_marks_array()
+    sorted_marks = sorted(marks)
+    worksheet.cell(row=0 + 1, column=0 + 1).value = 'Дата'
+    worksheet.cell(row=0 + 2, column=0 + 1).value = 'Конфликты'
+    worksheet.cell(row=0 + 3, column=0 + 1).value = 'Итого:'
+    for index, value in enumerate(sorted_marks):
+        worksheet.cell(row=index + 4, column=0 + 1).value = value
+    # for i in range(len(sorted_marks) + 3):
+    #     print(worksheet.cell(row=i + 1, column=0 + 1).value)
+
+
 def write_if_main_is_empty():  # если главный отчет пустой - заполняет его марками в первом столбце(теми
     # которые были в начальных данных в алфавитном порядке марок) и вызывает функцию заполнения
     global main_otchet_file
-    wb = openpyxl.load_workbook(main_otchet_file)
+    wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
     worksheet = wb['Лист1']
     get_rows_for_empty_list(worksheet)
     wb.save(main_otchet_file)
@@ -196,7 +251,7 @@ def write_if_data_exists():  # если главный отчет уже зап�
     # в начало списка проверок
     exel_array = get_exel_array()
     main_array = get_main_otchet_array()
-    wb = openpyxl.load_workbook(main_otchet_file)
+    wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
     worksheet = wb['Лист1']
     current_otchet_rows = get_otchet_rows_dict()
     result = exel_array.pop()
@@ -206,7 +261,7 @@ def write_if_data_exists():  # если главный отчет уже зап�
     line_1.insert(1, '')
     line_1.insert(1, f'{datetime.date.today()}')
     line_2.insert(1, 'Конфликты')
-    line_2.insert(1, 'Дата')
+    line_2.insert(1, '')
     line_3.insert(1, result[4])
     line_3.insert(1, result[1])
     moved_main_otchet_rows = moved_right_rows()
@@ -285,8 +340,8 @@ def start_recording(parent):
     if reply == QMessageBox.Yes:
         main_otchet_file = get_xlsx_in_dir(main_otchet_file)[0]
         exel_otchet_file = get_xlsx_in_dir(exel_otchet_file)[0]
-        print(main_otchet_file)
-        print(exel_otchet_file)
+        # print(main_otchet_file)
+        # print(exel_otchet_file)
         write_data_in_main_otchet()()
     else:
         pass
