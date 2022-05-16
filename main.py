@@ -10,6 +10,8 @@ import openpyxl
 from openpyxl.styles import (
     PatternFill, Border, Side
 )
+from numpy import nan
+
 
 array_of_colors = ['CCD1BF', 'D4D2AA', 'DFE2E4', 'C9D5D1', 'D5CAAF', 'CFB677', 'BED2B8', 'ACC1CB', 'CECEA9', 'A1BCCB',
                    'D6DCC6']
@@ -22,26 +24,8 @@ exel_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples
 
 
 def get_main_otchet_array():  # читает главный отчет и представляет его в виде двумерного массива
-    # wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
-    # worksheet = wb['Лист1']
-    # # print(worksheet)
-    # # print(worksheet.max_row)
-    # # print(worksheet.max_column)
-    # if worksheet.cell(row=1, column=1).value is None:
-    #     return []
-    # exel_array = []
-    # for i in range(worksheet.max_row):
-    #     exel_array.append([])
-    #     for j in range(worksheet.max_column):
-    #         value = worksheet.cell(row=i + 1, column=j + 1).value
-    #         if value is None:
-    #             value = ''
-    #         exel_array[i].append(value)
-    # return exel_array
-    # print(pyexcel.get_array(file_name=main_otchet_file))
-    # return get_array(file_name=main_otchet_file)
-
     df = read_excel(main_otchet_file, sheet_name='Лист1')
+    df.replace('nan', nan, inplace=True)
     df.fillna(0)
     df = list(df.values)
     wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
@@ -57,34 +41,18 @@ def get_main_otchet_array():  # читает главный отчет и пре
         for j in range(len(df[i])):
             if pandas.isna(df[i][j]):
                 df[i][j] = ''
-    # print(df[index])
-    # print(df)
-    # print('##############################################################')
     return df
 
 
 def get_exel_array():  # представляет отчет в виде двумерного массива
-    # wb = openpyxl.load_workbook(exel_otchet_file, data_only=True)
-    # worksheet = wb['Лист1']
-    # exel_array = []
-    # for i in range(worksheet.max_row):
-    #     exel_array.append([])
-    #     for j in range(worksheet.max_column):
-    #         value = worksheet.cell(row=i + 1, column=j + 1).value
-    #         if value is None:
-    #             value = ''
-    #         exel_array[i].append(value)
-    # for i in range(len(df)):
-    #     for j in range(len(df[i])):
-    #         if df[i][j] == 'nan':
-    #             df[i][j] = ''
-    # print(pyexcel.get_array(file_name=exel_otchet_file))
     wb = openpyxl.load_workbook(exel_otchet_file, data_only=True)
     worksheet = wb['Лист1']
     first_line = []
     for i in range(worksheet.max_column):
         first_line.append(worksheet.cell(row=0 + 1, column=i + 1).value)
     df = read_excel(exel_otchet_file, sheet_name='Лист1')
+    df.replace('nan', nan, inplace=True)
+    df.fillna(0)
     df = list(df.values)
     for index, value in enumerate(df):
         df[index] = list(value)
@@ -92,11 +60,11 @@ def get_exel_array():  # представляет отчет в виде дву�
     for i in range(len(df)):
         for j in range(len(df[i])):
             if pandas.isna(df[i][j]):
+                # print(df[i][j])
                 df[i][j] = 0
-    # print(df)
-    # #     print(df[index])
-    # print(df)
-    # print('#################################################')
+            if type(df[i][j]) is float:
+                df[i][j] = int(df[i][j])
+
     return df
 
 
@@ -135,22 +103,19 @@ def get_otchet_rows_dict():  # из названия файлов достает
         else:
             rows_array.append([f'Кол-во конфликтов между {i[0]}', i[1], i[4]])
             added_marks.append(i[0])
-    print(rows_array)
     for i in range(len(rows_array)):
         for j in range(3):
-            if rows_array[i][j] == '' or rows_array[i][j] == 'Коллизий не обнаружено':
+            if rows_array[i][j] == '' or rows_array[i][j] == 'Коллизий не обнаружено' or pandas.isna(rows_array[i][j]):
                 rows_array[i][j] = 0
     marks_and_rows_dict = {}
     for value in rows_array:
         if value[0] not in marks_and_rows_dict.keys():
             marks_and_rows_dict.update({value[0]: [value[1], value[2]]})
         else:
+
             mark_value = marks_and_rows_dict[value[0]]
-            marks_and_rows_dict[value[0]] = [int(mark_value[0]) + int(value[1]), int(mark_value[1]) + int(value[2])]
-            # print(mark_value[0])
-            # print(mark_value[1])
-            # print(value)
-            # print('#########################################################')
+            marks_and_rows_dict[value[0]] = [mark_value[0] + value[1], mark_value[1] + value[2]]
+            print(f"{type(mark_value[0])} + {type(value[1])}, {type(mark_value[1])} + {type(value[2])}")
     return marks_and_rows_dict
 
 
@@ -192,9 +157,6 @@ def get_main_marks_and_rows():  # превращает главный exel от�
 
 def moved_right_rows():  # добвляет в начале строки 2 пустых элемента в которые будут вписаны данные
     # новой проверки
-    # wb = openpyxl.load_workbook(r"c:/users/skrut/onedrive/рабочий стол/exelexamples/kt101r_главный отчет.xlsx")
-    # worksheet = wb['openpyxl']
-    # wb.save(r"C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx")
     moved_rows = get_main_marks_and_rows()
     for i in moved_rows.keys():
         moved_rows[i] = [0, 0] + moved_rows[i]
@@ -233,8 +195,6 @@ def get_rows_for_empty_list(worksheet):  # добавляет марки из о
     worksheet.cell(row=0 + 3, column=0 + 1).value = 'Итого:'
     for index, value in enumerate(sorted_marks):
         worksheet.cell(row=index + 4, column=0 + 1).value = value
-    # for i in range(len(sorted_marks) + 3):
-    #     print(worksheet.cell(row=i + 1, column=0 + 1).value)
 
 
 def write_if_main_is_empty():  # если главный отчет пустой - заполняет его марками в первом столбце(теми
@@ -308,8 +268,8 @@ def write_data_in_main_otchet():  # заполняет данными в зав�
     return write_if_main_is_empty
 
 
-write_data_in_main_otchet()()
-'''
+# write_data_in_main_otchet()()
+
 app = QApplication(sys.argv)
 w = QWidget()
 w.setWindowTitle('Добавление данных проверки')
@@ -387,4 +347,3 @@ directory_button.setMinimumSize(QtCore.QSize(70, 40))
 
 w.show()
 sys.exit(app.exec())
-'''
