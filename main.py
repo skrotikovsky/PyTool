@@ -11,16 +11,17 @@ from openpyxl.styles import (
     PatternFill, Border, Side
 )
 from numpy import nan
+import re
 
 
 array_of_colors = ['CCD1BF', 'D4D2AA', 'DFE2E4', 'C9D5D1', 'D5CAAF', 'CFB677', 'BED2B8', 'ACC1CB', 'CECEA9', 'A1BCCB',
                    'D6DCC6']
 # main_otchet_file = r'C:\Users\skrut\OneDrive\Рабочий стол\exelExamples\KT101R_Главный отчет.xlsx'
 # exel_otchet_file = r'C:\Users\skrut\OneDrive\Рабочий стол\exelExamples\Просмотр\Коллизии\2022.4.27\3.xlsx'
-main_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx'
-exel_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/Просмотр/Коллизии/2022.4.24/1.xlsx'
-# main_otchet_file = ''
-# exel_otchet_file = ''
+# main_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/KT101R_Главный отчет.xlsx'
+# exel_otchet_file = 'C:/Users/skrut/OneDrive/Рабочий стол/exelExamples/Просмотр/Коллизии/2022.4.27/PMG03R_nwf 13_05_2022.xlsx'
+main_otchet_file = ''
+exel_otchet_file = ''
 
 
 def get_main_otchet_array():  # читает главный отчет и представляет его в виде двумерного массива
@@ -92,17 +93,19 @@ def get_otchet_rows_dict():  # из названия файлов достает
     rows_array = []
     data = get_exel_array()
     for i in data[1:len(data) - 1]:
-        marks = i[0].split('.')
-        i[0] = marks[len(marks) - 1]
-        splited_mark = i[0].split('_')
+        marks = i[0].split('-')[1]
+        letters = re.findall("[A-Za-zА-Яа-я_]", marks)
+        normalised_str = ''
+        for j in letters:
+            normalised_str = normalised_str + str(j)
+        splited_mark = normalised_str.split('_')
         replaced_mark = f'{splited_mark[1]}_{splited_mark[0]}'
-
         if replaced_mark in added_marks:
             rows_array.append([f'Кол-во конфликтов между {replaced_mark}', i[1], i[4]])
             added_marks.append(replaced_mark)
         else:
-            rows_array.append([f'Кол-во конфликтов между {i[0]}', i[1], i[4]])
-            added_marks.append(i[0])
+            rows_array.append([f'Кол-во конфликтов между {normalised_str}', i[1], i[4]])
+            added_marks.append(normalised_str)
     for i in range(len(rows_array)):
         for j in range(3):
             if rows_array[i][j] == '' or rows_array[i][j] == 'Коллизий не обнаружено' or pandas.isna(rows_array[i][j]):
@@ -112,10 +115,8 @@ def get_otchet_rows_dict():  # из названия файлов достает
         if value[0] not in marks_and_rows_dict.keys():
             marks_and_rows_dict.update({value[0]: [value[1], value[2]]})
         else:
-
             mark_value = marks_and_rows_dict[value[0]]
             marks_and_rows_dict[value[0]] = [mark_value[0] + value[1], mark_value[1] + value[2]]
-            print(f"{type(mark_value[0])} + {type(value[1])}, {type(mark_value[1])} + {type(value[2])}")
     return marks_and_rows_dict
 
 
@@ -124,16 +125,21 @@ def get_otchet_marks_array():  # достает только марки и де�
     added_marks = []
     data = get_exel_array()
     for i in data[1:len(data) - 1]:
-        marks = i[0].split('.')
-        i[0] = marks[len(marks) - 1]
-        splited_mark = i[0].split('_')
+        marks = i[0].split('-')[1]
+        letters = re.findall("[A-Za-zА-Яа-я_]", marks)
+        normalised_str = ''
+        for j in letters:
+            normalised_str = normalised_str + str(j)
+        # marks = i[0].split('.')
+        # i[0] = marks[len(marks) - 1]
+        splited_mark = normalised_str.split('_')
         replaced_mark = f'{splited_mark[1]}_{splited_mark[0]}'
         if replaced_mark in added_marks:
             marks_array.append(f'Кол-во конфликтов между {replaced_mark}')
             added_marks.append(replaced_mark)
         else:
-            marks_array.append(f'Кол-во конфликтов между {i[0]}')
-            added_marks.append(i[0])
+            marks_array.append(f'Кол-во конфликтов между {normalised_str}')
+            added_marks.append(normalised_str)
     return list(set(marks_array))
 
 
@@ -218,8 +224,10 @@ def write_if_data_exists():  # если главный отчет уже зап�
     line_1 = main_array[0]
     line_2 = main_array[1]
     line_3 = main_array[2]
+    date = os.path.dirname(exel_otchet_file).split('/')[-1].split('.')
+    print('1111111')
+    line_1.insert(1, f'{date[2]}.{date[1]}.{date[0]}')
     line_1.insert(1, '')
-    line_1.insert(1, f'{datetime.date.today()}')
     line_2.insert(1, 'Конфликты')
     line_2.insert(1, '')
     line_3.insert(1, result[4])
@@ -228,6 +236,7 @@ def write_if_data_exists():  # если главный отчет уже зап�
     sorted_otchet_marks = sorted(moved_main_otchet_rows.keys())
     keys_and_colors = {}
     counter = 0
+
     for index, value in enumerate(sorted_otchet_marks):
         if value in ['Дата', 'Конфликты', 'Итого:', '', None]:
             continue
@@ -239,12 +248,13 @@ def write_if_data_exists():  # если главный отчет уже зап�
             moved_main_otchet_rows[value][1] = ''
         if counter == len(array_of_colors):
             counter = 0
-        worksheet.cell(row=index + 4, column=0 + 1).value = value
+        worksheet.cell(row=index + 2, column=0 + 1).value = value
         keys_and_colors.update({value: array_of_colors[counter]})
         counter += 1
-
+    print(moved_main_otchet_rows)
     for value in range(len(moved_main_otchet_rows.keys())):
         row_key = worksheet.cell(row=value + 4, column=0 + 1).value
+        print(row_key)
         if row_key not in ['Дата', 'Конфликты', 'Итого:', '', None]:
             write_row(moved_main_otchet_rows[row_key], value + 4, 2, worksheet)
             paint_row(moved_main_otchet_rows[row_key], value + 4, keys_and_colors[row_key], worksheet, 2)
@@ -295,13 +305,13 @@ def start_recording(parent):
     global exel_otchet_file
     reply = QMessageBox.question(parent, 'Предупреждение',
                                  "Вы действительно хотите запустить генерацию отчета?\nПроверьте правильность "
-                                 "указанного пути\nВнесенные изменения будут необратимы", QMessageBox.Yes |
+                                 "указанного пути", QMessageBox.Yes |
                                  QMessageBox.No, QMessageBox.No)
     if reply == QMessageBox.Yes:
         main_otchet_file = get_xlsx_in_dir(main_otchet_file)[0]
         exel_otchet_file = get_xlsx_in_dir(exel_otchet_file)[0]
-        # print(main_otchet_file)
         # print(exel_otchet_file)
+        # print(main_otchet_file)
         write_data_in_main_otchet()()
     else:
         pass
@@ -311,7 +321,7 @@ btn1 = QPushButton()
 btn2 = QPushButton()
 btn3 = QPushButton()
 
-btn1.setText('Выбор папки с проектом')
+btn1.setText('Выбор папки с главным отчетом')
 btn1.setParent(w)
 btn1.move(5, 5)
 btn1.resize(175, 50)
