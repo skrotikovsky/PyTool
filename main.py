@@ -3,16 +3,15 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QTextEdit, QMessageBox
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
 import sys
-import datetime
 import os
 from pandas import read_excel
 import openpyxl
 from openpyxl.styles import (
-    PatternFill, Border, Side
+    PatternFill, Border, Side, Alignment, Font
 )
 from numpy import nan
 import re
-
+import time
 
 array_of_colors = ['CCD1BF', 'D4D2AA', 'DFE2E4', 'C9D5D1', 'D5CAAF', 'CFB677', 'BED2B8', 'ACC1CB', 'CECEA9', 'A1BCCB',
                    'D6DCC6']
@@ -94,7 +93,7 @@ def get_otchet_rows_dict():  # из названия файлов достает
     data = get_exel_array()
     for i in data[1:len(data) - 1]:
         marks = i[0].split('-')[1]
-        letters = re.findall("[A-Za-zА-Яа-я_]", marks)
+        letters = re.findall("[A-Za-zА-Яа-я_()]", marks)
         normalised_str = ''
         for j in letters:
             normalised_str = normalised_str + str(j)
@@ -126,7 +125,7 @@ def get_otchet_marks_array():  # достает только марки и де�
     data = get_exel_array()
     for i in data[1:len(data) - 1]:
         marks = i[0].split('-')[1]
-        letters = re.findall("[A-Za-zА-Яа-я_]", marks)
+        letters = re.findall("[A-Za-zА-Яа-я_()]", marks)
         normalised_str = ''
         for j in letters:
             normalised_str = normalised_str + str(j)
@@ -174,11 +173,13 @@ def moved_right_rows():  # добвляет в начале строки 2 пу�
     return moved_rows
 
 
-def write_row(row, row_num, column_start, worksheet):  # функция написания строки в лист(worksheet) в строку номер (row
-    # num) а сама
-    # строка = row
+def write_row(row, row_num, column_start, worksheet, alignment, is_bold):  # функция написания строки в лист(
+    # worksheet) в строку номер (row num) а сама строка = row
     for i, value in enumerate(row):
-        worksheet.cell(row=row_num, column=i + column_start).value = row[i]
+        cell = worksheet.cell(row=row_num, column=i + column_start)
+        cell.value = row[i]
+        cell.alignment = Alignment(horizontal=f'{alignment}')
+        cell.font = Font(bold=is_bold)
 
 
 def paint_row(row, row_num, color, worksheet, column_start):
@@ -213,8 +214,24 @@ def write_if_main_is_empty():  # если главный отчет пустой
     write_if_data_exists()
 
 
+def make_bold_first_col(worksheet, row_num):
+    for i in range(row_num):
+        cell = worksheet.cell(row=i + 1, column=1)
+        cell.font = Font(bold=True)
+
+
+def vertical_align_second_row(worksheet, items_num):
+    for i in range(items_num + 1):
+        cell = worksheet.cell(row=2, column=i + 1)
+        cell.alignment = Alignment(vertical='center', horizontal='center')
+        if i == 0:
+            cell.font = Font(size=20)
+
+
 def write_if_data_exists():  # если главный отчет уже заполнен - добавляет данные по новой проверке
     # в начало списка проверок
+    global main_otchet_file
+    global exel_otchet_file
     exel_array = get_exel_array()
     main_array = get_main_otchet_array()
     wb = openpyxl.load_workbook(main_otchet_file, data_only=True)
@@ -225,11 +242,11 @@ def write_if_data_exists():  # если главный отчет уже зап�
     line_2 = main_array[1]
     line_3 = main_array[2]
     date = os.path.dirname(exel_otchet_file).split('/')[-1].split('.')
-    print('1111111')
+    date = list(map(lambda x: '0' + x if len(x) < 2 else x, date))
     line_1.insert(1, f'{date[2]}.{date[1]}.{date[0]}')
     line_1.insert(1, '')
-    line_2.insert(1, 'Конфликты')
-    line_2.insert(1, '')
+    line_2.insert(1, 'Новые')
+    line_2.insert(1, 'Общее кол-во')
     line_3.insert(1, result[4])
     line_3.insert(1, result[1])
     moved_main_otchet_rows = moved_right_rows()
@@ -251,19 +268,19 @@ def write_if_data_exists():  # если главный отчет уже зап�
         worksheet.cell(row=index + 2, column=0 + 1).value = value
         keys_and_colors.update({value: array_of_colors[counter]})
         counter += 1
-    print(moved_main_otchet_rows)
     for value in range(len(moved_main_otchet_rows.keys())):
         row_key = worksheet.cell(row=value + 4, column=0 + 1).value
-        print(row_key)
         if row_key not in ['Дата', 'Конфликты', 'Итого:', '', None]:
-            write_row(moved_main_otchet_rows[row_key], value + 4, 2, worksheet)
+            write_row(moved_main_otchet_rows[row_key], value + 4, 2, worksheet, 'center', True)
             paint_row(moved_main_otchet_rows[row_key], value + 4, keys_and_colors[row_key], worksheet, 2)
-    write_row(line_1, 0 + 1, 1, worksheet)
-    write_row(line_2, 1 + 1, 1, worksheet)
-    write_row(line_3, 2 + 1, 1, worksheet)
+    write_row(line_1, 0 + 1, 1, worksheet, 'center', False)
+    write_row(line_2, 1 + 1, 1, worksheet, 'center', False)
+    write_row(line_3, 2 + 1, 1, worksheet, 'center', False)
     paint_row(line_1, 0 + 1, '92FF88', worksheet, 1)
     paint_row(line_2, 1 + 1, '92FF88', worksheet, 1)
     paint_row(line_3, 2 + 1, 'D9FF88', worksheet, 1)
+    vertical_align_second_row(worksheet, len(moved_main_otchet_rows['Конфликты']))
+    make_bold_first_col(worksheet, len(sorted_otchet_marks) + 3)
     wb.save(main_otchet_file)
 
 
@@ -300,6 +317,10 @@ def get_otchet_dir(directory):
     text_field_2.setText(directory)
 
 
+# def get_end_of_file(path):
+#     # name = file
+
+
 def start_recording(parent):
     global main_otchet_file
     global exel_otchet_file
@@ -308,11 +329,13 @@ def start_recording(parent):
                                  "указанного пути", QMessageBox.Yes |
                                  QMessageBox.No, QMessageBox.No)
     if reply == QMessageBox.Yes:
-        main_otchet_file = get_xlsx_in_dir(main_otchet_file)[0]
-        exel_otchet_file = get_xlsx_in_dir(exel_otchet_file)[0]
-        # print(exel_otchet_file)
-        # print(main_otchet_file)
+
+        # if not os.path.basename(main_otchet_file).splitext[1] main_otchet_file and not exel_otchet_file:
+        main_otchet_file = get_xlsx_in_dir(text_field_1.toPlainText())[0]
+        exel_otchet_file = get_xlsx_in_dir(text_field_2.toPlainText())[0]
         write_data_in_main_otchet()()
+        QMessageBox.information(parent, 'Готово', 'Отчет успешно сформирован', QMessageBox.Ok, QMessageBox.Ok)
+
     else:
         pass
 
